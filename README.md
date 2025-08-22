@@ -57,6 +57,9 @@ JWT (JSON Web Tokens): Secure authentication
 Spring Data JPA: Database operations
 Postman: API testing
 
+## Postman Collection
+You can import the [Habit Tracker Postman Collection](./postman/HabitTracker.postman_collection.json) into Postman to test all API endpoints.
+
 ### Running the application
 
 1. Configure your database in `application.properties`.
