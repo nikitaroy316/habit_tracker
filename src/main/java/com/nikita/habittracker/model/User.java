@@ -30,11 +30,18 @@ public class User {
     @Email(message = "Invalid email address")
     private String email;
 
+    @JsonIgnore
     @Size(min = 3, message = "Password must be at least 3 characters")
     private String password;
 
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    @Column(name = "enabled")
+    private boolean enabled = true;
+
+    @Column(name = "account_non_locked")
+    private boolean accountNonLocked = true;
 
     @JsonManagedReference("user-habit")
     @OneToMany(mappedBy = "user",cascade = CascadeType.ALL,fetch = FetchType.LAZY)

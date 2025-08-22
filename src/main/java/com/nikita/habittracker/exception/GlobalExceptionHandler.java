@@ -2,6 +2,7 @@ package com.nikita.habittracker.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -25,4 +26,16 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(InformationExistException.class)
+    public ResponseEntity<String> handleInformationExistException(InformationExistException ex) {
+        // Returning a 409 Conflict status when duplicate email is found
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<?> handleEnumConversionError(HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest().body("Invalid role value");
+    }
+
 }

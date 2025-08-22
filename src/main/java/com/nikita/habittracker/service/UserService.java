@@ -1,5 +1,6 @@
 package com.nikita.habittracker.service;
 
+import com.nikita.habittracker.exception.IllegalArgumentException;
 import com.nikita.habittracker.exception.InformationExistException;
 import com.nikita.habittracker.exception.InformationNotFoundException;
 import com.nikita.habittracker.model.Profile;
@@ -11,8 +12,7 @@ import com.nikita.habittracker.security.JwtTokenUtil;
 import com.nikita.habittracker.security.MyUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,9 +39,18 @@ public class UserService {
 
 
     public User createUser(User user){
+        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+            throw new IllegalArgumentException("Email cannot be blank");
+        }
+
+        if(user.getPassword() == null || user.getPassword().trim().isEmpty())
+            throw new IllegalArgumentException("Password cannot be blank");
+
         Optional<User> userOptional = Optional.ofNullable(userRepository.findByEmail(user.getEmail())); //checks if email address already exists in database
         if (userOptional.isEmpty()){ // email not registered yet
             user.setPassword(passwordEncoder.encode(user.getPassword()));
+            user.setEnabled(true);
+            user.setAccountNonLocked(true);
             Profile profile = user.getProfile();//encode password given
             user.setProfile(profile);
             return userRepository.save(user);
@@ -91,7 +100,20 @@ public class UserService {
             SecurityContextHolder.getContext().setAuthentication(authentication); //set security context
             MyUserDetails myUserDetails = (MyUserDetails) authentication.getPrincipal(); //get user details from authenticated object
             return Optional.of(jwtTokenUtil.generateToken(myUserDetails.getUsername())); // generate a token for the authenticated user
-        } catch (Exception e) {
+        }
+        catch (DisabledException e)
+        {
+            throw new RuntimeException("Your account is disabled.");
+        }
+        catch (LockedException e)
+        {
+            throw new RuntimeException("Your account is locked.");
+        }
+        catch (BadCredentialsException e)
+        {
+            throw new RuntimeException("Invalid username or password.");
+        }
+        catch (Exception e) {
             return Optional.empty();
         }
     }
@@ -100,7 +122,7 @@ public class UserService {
         Optional<User> userOptional = Optional.ofNullable(findByEmail(user.getEmail()));
         if(userOptional.isPresent()){ //user exists in database
             //throws error if provided profile is equal to original
-            if (userOptional.get().getProfile() == user.getProfile()){
+            if (userOptional.get().getProfile().equals(user.getProfile())){
                 throw new InformationExistException("Profile details are the same. No update needed.");
             }
             //updates first name if not null and different from original
@@ -122,5 +144,15 @@ public class UserService {
         } else {
             throw new InformationNotFoundException("user with email address " + user.getEmail() + " not found.");
         }
+    }
+
+    public User updateUserStatus(User user){
+        return userRepository.save(user);
+    }
+
+    public static User getCurrentLoggedInUser(){
+        MyUserDetails userDetails = (MyUserDetails) SecurityContextHolder //After jwt is generated, Security Context Holder is created to hold the user's state
+                .getContext().getAuthentication().getPrincipal(); // the entire User object, with authentication details
+        return userDetails.getUser();
     }
 }

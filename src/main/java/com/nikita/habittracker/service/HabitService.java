@@ -1,5 +1,6 @@
 package com.nikita.habittracker.service;
 
+import com.nikita.habittracker.exception.InformationNotFoundException;
 import com.nikita.habittracker.model.Habit;
 import com.nikita.habittracker.model.User;
 import com.nikita.habittracker.repository.HabitRepository;
@@ -58,6 +59,9 @@ public class HabitService {
 
     public void deleteHabit(int id)
     {
+        if (!habitRepository.existsById(id)) {
+            throw new InformationNotFoundException("Habit with id " + id + " not found.");
+        }
          habitRepository.deleteById(id);
     }
 }
